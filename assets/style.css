@@ -172,3 +172,18 @@ details.status>summary{margin:0 0 12px}
 .mo-no .mwrap{animation:vibrate .6s}
 @keyframes vibrate{0%,100%{transform:translate(0)}10%{transform:translate(-10px,2px)}20%{transform:translate(10px,-2px)}30%{transform:translate(-9px,2px)}40%{transform:translate(9px,-2px)}50%{transform:translate(-7px,1px)}60%{transform:translate(7px,-1px)}70%{transform:translate(-4px)}80%{transform:translate(4px)}90%{transform:translate(-2px)}}
 .cf{--c:var(--gold)}
+
+/* calendar-page date */
+.calico{width:190px;border:2px solid var(--line);border-bottom-width:5px;border-radius:16px;overflow:hidden;background:var(--card);text-align:center;margin:8px auto;box-shadow:0 4px 0 color-mix(in srgb,var(--line) 60%,transparent);position:relative}
+.calico:before,.calico:after{content:"";position:absolute;top:-8px;width:8px;height:16px;border-radius:4px;background:var(--bg);border:2px solid #0a82c4;z-index:1}
+.calico:before{left:30px}.calico:after{right:30px}
+.calico .cm{background:var(--maint);color:#fff;font-weight:900;font-size:12px;text-transform:uppercase;letter-spacing:1px;padding:12px 8px 6px}
+.calico .cd{font-size:72px;font-weight:900;line-height:1.05;padding:6px 0 0;color:var(--fg)}
+.calico .cw{font-size:16px;font-weight:800;color:var(--muted);padding:0 8px 12px;text-transform:uppercase;letter-spacing:1px}
+.calico.sm{width:130px}.calico.sm .cd{font-size:48px}.calico.sm .cw{font-size:12px;padding-bottom:8px}.calico.sm .cm{font-size:10px;padding-top:10px}
+.gtop .calico{margin:0 0 0 auto;flex:none}
+.calico.sm:before{left:10px}.calico.sm:after{right:10px}
+.calico.sm .cm{font-size:9px;letter-spacing:.5px;padding:10px 6px 5px;white-space:nowrap}
+.gtop{flex-wrap:wrap;justify-content:center}
+.gtop .gq{flex:1;min-width:170px}
+.gtop .calico{margin:4px auto 0}

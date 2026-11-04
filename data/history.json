@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-04T11:33:32.873Z",
+ "generatedAt": "2026-11-04T12:41:23.294Z",
  "source": "https://www.githubstatus.com/history",
  "startDate": "2025-01-01",
  "incidentDays": {
@@ -208,21 +208,9 @@
   ],
   "2025-02-28": [
    {
-    "id": "5ylj8dpvg096",
-    "name": "[Scheduled] Scheduled Codespaces Maintenance",
-    "impact": "maintenance"
-   },
-   {
     "id": "36ftd36c921f",
     "name": "Elevated Request Latency for Write operations on github.com and api.github.com",
     "impact": "minor"
-   }
-  ],
-  "2025-03-01": [
-   {
-    "id": "5ylj8dpvg096",
-    "name": "[Scheduled] Scheduled Codespaces Maintenance",
-    "impact": "maintenance"
    }
   ],
   "2025-03-03": [
@@ -262,11 +250,6 @@
   ],
   "2025-03-18": [
    {
-    "id": "tldgc85p3q2d",
-    "name": "[Scheduled] Scheduled Migrations Maintenance",
-    "impact": "maintenance"
-   },
-   {
     "id": "lg4s05t6ttxb",
     "name": "Incident with Actions: Queue Run Failures",
     "impact": "minor"
@@ -283,11 +266,6 @@
    }
   ],
   "2025-03-19": [
-   {
-    "id": "tldgc85p3q2d",
-    "name": "[Scheduled] Scheduled Migrations Maintenance",
-    "impact": "maintenance"
-   },
    {
     "id": "lg4s05t6ttxb",
     "name": "Incident with Actions: Queue Run Failures",
@@ -365,11 +343,6 @@
   ],
   "2025-04-02": [
    {
-    "id": "xb49wskhzrm2",
-    "name": "[Scheduled] Scheduled Codespaces Maintenance",
-    "impact": "maintenance"
-   },
-   {
     "id": "d3t3d2jn3b0j",
     "name": "Disruption with some GitHub services",
     "impact": "minor"
@@ -380,11 +353,6 @@
     "id": "6xn7r7hhrq72",
     "name": "Disruption with some GitHub services",
     "impact": "minor"
-   },
-   {
-    "id": "xb49wskhzrm2",
-    "name": "[Scheduled] Scheduled Codespaces Maintenance",
-    "impact": "maintenance"
    }
   ],
   "2025-04-07": [
@@ -465,20 +433,6 @@
     "impact": "minor"
    }
   ],
-  "2025-04-21": [
-   {
-    "id": "znhjr4vqqcdw",
-    "name": "[Scheduled] Codespaces Scheduled Maintenance",
-    "impact": "maintenance"
-   }
-  ],
-  "2025-04-22": [
-   {
-    "id": "znhjr4vqqcdw",
-    "name": "[Scheduled] Codespaces Scheduled Maintenance",
-    "impact": "maintenance"
-   }
-  ],
   "2025-04-23": [
    {
     "id": "7hdyxpt7sdzm",
@@ -519,19 +473,7 @@
     "impact": "major"
    }
   ],
-  "2025-05-07": [
-   {
-    "id": "hkp6z7kt2qm6",
-    "name": "[Scheduled] Codespaces Scheduled Maintenance",
-    "impact": "maintenance"
-   }
-  ],
   "2025-05-08": [
-   {
-    "id": "hkp6z7kt2qm6",
-    "name": "[Scheduled] Codespaces Scheduled Maintenance",
-    "impact": "maintenance"
-   },
    {
     "id": "42gtccf6dd98",
     "name": "Incident with Git Operations",
@@ -547,11 +489,6 @@
   ],
   "2025-05-14": [
    {
-    "id": "bs901hhxgw33",
-    "name": "[Scheduled] Codespaces Scheduled Maintenance",
-    "impact": "maintenance"
-   },
-   {
     "id": "kpv13bbn84n5",
     "name": "Disruption with Gemini 2.5 Pro model",
     "impact": "minor"
@@ -562,11 +499,6 @@
     "id": "pzrqw1n5ynw3",
     "name": "Disruption with Gemini 2.5 Pro",
     "impact": "minor"
-   },
-   {
-    "id": "bs901hhxgw33",
-    "name": "[Scheduled] Codespaces Scheduled Maintenance",
-    "impact": "maintenance"
    },
    {
     "id": "hjylhb7b8zcq",
@@ -657,45 +589,16 @@
   ],
   "2025-05-28": [
    {
-    "id": "67vdd3b7d1zq",
-    "name": "[Scheduled] Codespaces Scheduled Maintenance",
-    "impact": "maintenance"
-   },
-   {
     "id": "l5jqk83qnfzd",
     "name": "Disruption with some GitHub services",
     "impact": "major"
    }
   ],
-  "2025-05-29": [
-   {
-    "id": "nwjwwhj118sf",
-    "name": "[Scheduled] Codespaces Scheduled Maintenance",
-    "impact": "maintenance"
-   },
-   {
-    "id": "67vdd3b7d1zq",
-    "name": "[Scheduled] Codespaces Scheduled Maintenance",
-    "impact": "maintenance"
-   }
-  ],
   "2025-05-30": [
-   {
-    "id": "nwjwwhj118sf",
-    "name": "[Scheduled] Codespaces Scheduled Maintenance",
-    "impact": "maintenance"
-   },
    {
     "id": "p1rf575rlqml",
     "name": "Disruption with some GitHub services",
     "impact": "major"
-   }
-  ],
-  "2025-05-31": [
-   {
-    "id": "nwjwwhj118sf",
-    "name": "[Scheduled] Codespaces Scheduled Maintenance",
-    "impact": "maintenance"
    }
   ],
   "2025-06-04": [

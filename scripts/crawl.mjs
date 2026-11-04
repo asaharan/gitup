@@ -11,6 +11,8 @@ const BASE = 'https://www.githubstatus.com/history';
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MAX_PAGES = 80;
 const START_DATE = '2025-01-01';
+// Planned maintenance is not an incident: it must not break a streak or mark a day as down.
+const isMaintenance = (name = '', impact = '') => impact === 'maintenance' || /^\[scheduled\]/i.test(name);
 
 const decode = s => s
   .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<')
@@ -56,6 +58,11 @@ const file = path.join(here, '..', 'data', 'history.json');
 // Load existing history so past data is never lost
 let days = {};
 try { days = JSON.parse(await readFile(file, 'utf8')).incidentDays ?? {}; } catch {}
+// clean maintenance out of previously saved history too
+for (const [d, list] of Object.entries(days)) {
+  const kept = list.filter(i => !isMaintenance(i.name, i.impact));
+  if (kept.length) days[d] = kept; else delete days[d];
+}
 
 for (let page = 1; page <= MAX_PAGES; page++) {
   const data = await fetchPage(page);
@@ -63,6 +70,7 @@ for (let page = 1; page <= MAX_PAGES; page++) {
   for (const month of data.months) {
     const mi = MONTHS.indexOf(month.name.slice(0, 3));
     for (const inc of month.incidents) {
+      if (isMaintenance(inc.name, inc.impact)) continue;
       for (const day of daysOf(inc.timestamp, mi, month.year)) {
         if (day < START_DATE) continue;
         const list = (days[day] ??= []);

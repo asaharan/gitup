@@ -36,6 +36,7 @@ const FLAME = `<svg class="flame" viewBox="0 0 72 90"><path d="M36 2C40 22 66 36
 
 // ---- live feed: parse history.atom into {date: [incidents]} -------------------------
 const ud = down => `<b class="ud ${down ? 'down' : 'up'}">${down ? 'down' : 'up'}</b>`; // green "up" / red "down"
+const isMaintenance = (name = '', impact = '') => impact === 'maintenance' || /^\[scheduled\]/i.test(name);
 const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function parseFeed(xml) {
   const doc = new DOMParser().parseFromString(xml, 'application/xml');
@@ -43,6 +44,7 @@ function parseFeed(xml) {
   for (const e of doc.getElementsByTagName('entry')) {
     const q = n => e.getElementsByTagName(n)[0]?.textContent ?? '';
     const pub = Date.parse(q('published')); if (isNaN(pub)) continue;
+    if (isMaintenance(q('title'))) continue;
     const link = e.getElementsByTagName('link')[0]?.getAttribute('href') ?? '';
     const id = link.split('/').pop();
     // content is escaped HTML; every update inside carries "Mon D, HH:MM UTC"
@@ -112,6 +114,7 @@ const ago = t => { const m = Math.max(0, Math.round((Date.now() - Date.parse(t))
 function activeDays(summary) {
   const out = {};
   for (const inc of summary?.incidents ?? []) {
+    if (isMaintenance(inc.name, inc.impact)) continue;
     const from = Date.parse(iso(Date.parse(inc.started_at ?? inc.created_at))), to = Date.parse(iso(Date.now()));
     for (let t = from; t <= to; t += DAY) (out[iso(t)] ??= []).push({ id: inc.id, name: inc.name, impact: inc.impact });
   }
@@ -242,7 +245,7 @@ function renderGame(data, s, first, monday) {
       <div class="ghint">Guess ${ROUND} random days: up or down?${G.best ? ` Best score: <b>${G.best}/${ROUND}</b>` : ''}</div>`;
   } else if (!done) {
     top = `<div class="gtop"><div class="gduo">${duo(L && !L.ok ? 'sad' : 'happy')}</div>
-      <div class="gq"><small>Day ${G.i + 1} of ${ROUND} · score ${G.res.filter(r => r.ok).length}</small><br>Was GitHub ${ud(false)} or ${ud(true)} on<br><span class="gdate">${esc(niceDate(target))}</span>?</div></div>`;
+      <div class="gq"><small>Day ${G.i + 1} of ${ROUND} · score ${G.res.filter(r => r.ok).length}</small><br>Was GitHub ${ud(false)} or ${ud(true)} on</div>${calIcon(target, 'sm')}</div>`;
     bottom = `<div class="gbtns"><button data-g="up" class="gb up">Up</button><button data-g="down" class="gb down">Down</button></div>${last}
       <button class="glink" data-g="quit">Quit game</button>`;
   } else {
@@ -280,14 +283,114 @@ $('#game').addEventListener('click', e => {
 // ---- Full-screen guess modal (mobile friendly): one day at a time ----------------------
 const REVEAL_MS = 4500;      // result screen length (any tap skips it)
 const TAP_GUARD_MS = 300;    // ignore taps right after answering so a double-tap doesn't skip the result
+// Generic lines, keyed `${actual}_${yourGuess}`
 const JOKES = {
-  // [actual][guess]
   down_down: ["You're goddamn right.", "Say my name. 'GitHub is down.'", 'I am the one who clicks refresh.', 'Heisenberg of uptime. Nobody calls it like you.', 'Of course it was down. Was there ever a doubt?'],
-  up_up: ['A green day. Somewhere, a deploy was skipped.', 'Up! Frame this one, it is rare.', 'Nobody pushed on a Friday. Respect.', 'Correct. Someone at GitHub must have had a good coffee.'],
+  up_up: ['A green day. Frame this one, it is rare.', 'Up! Someone at GitHub must have had a good coffee.', 'Correct. A rare unicorn-free day.', 'Up. Nobody touched prod. Probably.'],
   down_up: ['Up? On GitHub? That is adorable.', 'Optimism is not a monitoring strategy.', "Down was the safe guess. It's always the safe guess.", 'Bold of you to assume 100% uptime.', 'The unicorn would like a word.'],
   up_down: ['Cynical. And, annoyingly, wrong: it was up.', 'It was up! Stop jinxing them.', 'Down? They actually had a good day. Let them have it.', 'Trust issues? Same. But this was a clean day.'],
 };
-const pickJoke = r => { const l = JOKES[`${r.down ? 'down' : 'up'}_${(r.ok ? r.down : !r.down) ? 'down' : 'up'}`]; return l[Math.floor(Math.random() * l.length)]; };
+
+// Contextual lines: only used when the day actually matches (weekday, special date, or what broke)
+const WEEKDAY = {
+  1: { // Monday
+    down_down: ['Monday blues, now with downtime.', 'Monday: coffee, standup, outage. Tradition.'],
+    down_up: ['Monday blues hit GitHub too. Never guess up on a Monday.', "It's Monday. Everything is down, including morale."],
+    up_up: ['Up on a Monday. A small mercy.', 'Monday and no incident. Enjoy it; the week has not finished yet.'],
+    up_down: ['Even GitHub woke up on time this Monday.', 'Monday blues? Not for GitHub today.'],
+  },
+  2: { // Tuesday
+    down_down: ['Tuesday: the week finally remembered to break something.', 'Patch Tuesday energy. Microsoft owns GitHub, after all.'],
+    down_up: ['Tuesday: the day the Monday deploys finally land.', 'Patch Tuesday vibes. You should have known.'],
+    up_up: ['A calm Tuesday. Suspicious.', 'Tuesday, up. Nothing to see here, move along.'],
+    up_down: ['A quiet Tuesday, no Monday hangover for GitHub.'],
+  },
+  3: { // Wednesday
+    down_down: ['Hump day, hump incident.', 'Midweek outage. Peak "have you tried turning it off and on".'],
+    down_up: ['Midweek is where deploys go to die.', 'Hump day. Always a coin flip.'],
+    up_up: ['Hump day, and no hump. Nice.', 'A smooth Wednesday. Did anyone check on the on-call?'],
+    up_down: ['Midweek and still up. GitHub is in its prime.'],
+  },
+  4: { // Thursday
+    down_down: ['Thursday: everyone rushing to ship before Friday.', 'Thursday deploys: Friday fires, started early.'],
+    down_up: ['Thursday: shipping before the weekend panic. You were warned.', 'A "quick fix before tomorrow" got through.'],
+    up_up: ['Thursday and up. The weekend rush has not started.', 'Quiet Thursday. Savour it.'],
+    up_down: ['Thursday and up. They deployed on Wednesday instead.'],
+  },
+  5: { // Friday
+    down_down: ['Friday deploy. Classic. You saw it coming.', 'Down on a Friday: somebody said "quick fix before the weekend".', 'Friday incident. Somebody is cancelling their plans.'],
+    down_up: ['It was a Friday. What did you expect, a quiet one?', 'Friday deploy energy. You should have known better.'],
+    up_up: ['A Friday with no incident? Nobody deployed. Respect.', 'Up on a Friday. The "no deploy Fridays" rule actually works.'],
+    up_down: ['A Friday and up? They did not deploy. A Friday miracle.', 'Friday and no incident. Rare. Someone has discipline.'],
+  },
+  6: { // Saturday
+    down_down: ['A Saturday outage: somebody on call is not happy.', 'Down on a Saturday. Their weekend, officially cancelled.'],
+    down_up: ['A weekend deploy. Brave. Also wrong.', 'Saturday: someone deployed anyway.'],
+    up_up: ['A quiet Saturday. Developers were outside. Or not pushing.', 'Weekend, up. Nobody is working, nobody breaks anything.'],
+    up_down: ['Saturday: fewer pushes, fewer incidents. Basic maths.'],
+  },
+  0: { // Sunday
+    down_down: ['A Sunday outage. Someone is deploying for Monday. Bold.', 'Down on a Sunday. Tomorrow standup will be fun.'],
+    down_up: ['Sunday deploy for "a clean Monday". Spoiler: no.', 'Sunday incident. Somebody had "just one small fix".'],
+    up_up: ['A peaceful Sunday. Nobody pushed. Good for them.', 'Sunday, up. Even the servers rested.'],
+    up_down: ['Sunday and up. The best day for infrastructure is a day nobody touches it.'],
+  },
+};
+const FRI13 = {
+  down: ['Friday the 13th. Of course it was down.', 'Friday the 13th and a Friday deploy? Chaos.'],
+  up: ['Friday the 13th and still up. Impressive.', 'Friday the 13th: GitHub dared the universe, and won.'],
+};
+const SPECIAL = { // "month-day" -> by actual state
+  '12-25': { down: ['An outage on Christmas Day. Santa uses git too.'], up: ['Up on Christmas. Even the servers took the day off.'] },
+  '12-24': { down: ['Christmas Eve outage. The last deploy before the holidays, as ever.'], up: ['Christmas Eve, and up. No last-minute fixes.'] },
+  '12-31': { down: ['Down on New Year\'s Eve. One last deploy for the year.'], up: ['Up on New Year\'s Eve. Everyone is off to the party.'] },
+  '1-1': { down: ['New year, new incident.'], up: ['Up on New Year\'s Day. Everybody is asleep.'] },
+  '2-14': { down: ['Valentine\'s Day: GitHub broke up with us.'], up: ['Valentine\'s Day: GitHub stayed. Unlike your last PR reviewer.'] },
+  '4-1': { down: ['April Fools\' Day. The status page said down. Was it a prank? No.'], up: ['April Fools\': up, genuinely. The most suspicious thing today.'] },
+  '10-31': { down: ['Halloween. A spooky deploy.'], up: ['Halloween, up. The only scary thing was your guess.'] },
+  '3-14': { down: ['Pi Day outage. Irrational behaviour.'], up: ['Pi Day, up. Perfectly rational.'] },
+  '5-4': { down: ['May the 4th: the Force was not with GitHub.'], up: ['May the 4th, up. The Force was with them.'] },
+};
+const INCIDENT = [ // regex on the incident name -> lines (only when the day was actually down)
+  [/copilot/i, ['Copilot was down. Devs briefly had to think for themselves.', 'Copilot down: everyone suddenly remembers how to write a for loop.']],
+  [/actions|runner|workflow/i, ['Actions was down. The build is green in spirit.', 'CI is red, the coffee is cold.']],
+  [/pages/i, ['Pages was down. Portfolios everywhere went dark.']],
+  [/codespaces/i, ['Codespaces was down. "Works on my machine" is back.']],
+  [/git operations|\bgit\b|clone|push/i, ['Git was down. git push, but make it a prayer.']],
+  [/webhook/i, ['Webhooks were delayed. Your notifications will arrive in the next life.']],
+  [/\bapi\b/i, ['API errors. curl returns vibes only.']],
+  [/package|npm|registry|container/i, ['Packages was down. node_modules is not coming.']],
+  [/dependabot/i, ['Dependabot was down. For one day, nobody got 47 pull requests.']],
+  [/pull request/i, ['Pull Requests were down. LGTM, delayed.']],
+  [/issues/i, ['Issues were down. The backlog briefly stopped judging.']],
+  [/billing/i, ['Billing was down. Free for a day, accidentally.']],
+  [/search/i, ['Search was down. Nobody found anything, not even bugs.']],
+];
+
+function ctxLines(r) {
+  const dt = new Date(r.date + 'T00:00:00Z'), wd = dt.getUTCDay();
+  const actual = r.down ? 'down' : 'up', guess = (r.ok ? r.down : !r.down) ? 'down' : 'up';
+  const out = [...(WEEKDAY[wd]?.[`${actual}_${guess}`] ?? [])];
+  if (wd === 5 && dt.getUTCDate() === 13) out.push(...FRI13[actual], ...FRI13[actual]); // double weight: rare
+  const sp = SPECIAL[`${dt.getUTCMonth() + 1}-${dt.getUTCDate()}`]?.[actual];
+  if (sp) out.push(...sp, ...sp);
+  if (r.down) for (const [re, lines] of INCIDENT) if (re.test(r.name)) out.push(...lines);
+  return out;
+}
+const pickJoke = r => {
+  const ctx = ctxLines(r);
+  const pool = ctx.length && Math.random() < .8 ? ctx : JOKES[`${r.down ? 'down' : 'up'}_${(r.ok ? r.down : !r.down) ? 'down' : 'up'}`];
+  return pool[Math.floor(Math.random() * pool.length)];
+};
+
+// Calendar-page style date, easy to read at a glance
+function calIcon(d, size = '') {
+  const dt = new Date(d + 'T00:00:00Z'), f = o => dt.toLocaleDateString('en-GB', { ...o, timeZone: 'UTC' });
+  return `<div class="calico ${size}" role="img" aria-label="${esc(niceDate(d))}">
+    <div class="cm"><span>${f({ month: size ? 'short' : 'long' })}</span> <span>${f({ year: 'numeric' })}</span></div>
+    <div class="cd">${f({ day: 'numeric' })}</div>
+    <div class="cw">${f({ weekday: 'long' })}</div></div>`;
+}
 const M = { revealAt: 0, timer: 0, open: false, days: [], picks: [], i: 0, res: [], reveal: null };
 const mo = document.createElement('div');
 mo.className = 'mo'; mo.hidden = true; mo.setAttribute('role', 'dialog'); mo.setAttribute('aria-modal', 'true'); mo.setAttribute('aria-label', 'Guess the day');
@@ -328,15 +431,14 @@ function renderModal() {
     body = `<div class="mbody rv ${r.ok ? 'ok' : 'no'}">${confetti}${duo(r.ok ? 'happy' : 'sad')}
       <div class="mres ${r.ok ? 'ok' : 'no'}">${r.ok ? '✓ Correct!' : '✕ Not quite.'}</div>
       <div class="mjoke">${esc(r.joke)}</div>
-      <div class="mdate">${esc(niceDate(r.date))}</div>
+      ${calIcon(r.date, 'sm')}
       <p class="mverdict">GitHub was ${ud(r.down)}${r.down ? `<br><small>${esc(r.name)}</small>` : ''}</p></div>`;
   } else {
     const d = M.picks[M.i], dt = new Date(d + 'T00:00:00Z');
     body = `<div class="mbody">${duo('happy')}
       <div class="mlabel">Day ${M.i + 1} of ${ROUND}</div>
       <div class="mq">Was GitHub ${ud(false)} or ${ud(true)} on</div>
-      <div class="mwd">${dt.toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' })}</div>
-      <div class="mdate big">${dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })}</div></div>
+      ${calIcon(d)}</div>
       <div class="mfoot two"><button class="gb up big" data-m="up">Up</button><button class="gb down big" data-m="down">Down</button></div>`;
   }
   mo.className = 'mo' + (M.reveal && M.i < ROUND ? (M.reveal.ok ? ' mo-ok' : ' mo-no') : '');
@@ -390,6 +492,10 @@ async function refresh() {
 (async () => {
   try {
     history = await getJSON('data/history.json');
+    for (const [d, l] of Object.entries(history.incidentDays)) {
+      const kept = l.filter(i => !isMaintenance(i.name, i.impact));
+      if (kept.length) history.incidentDays[d] = kept; else delete history.incidentDays[d];
+    }
     await refresh();
     setInterval(refresh, 60000); // keep the status fresh while the tab is open
   } catch (e) {
