@@ -35,6 +35,7 @@ function duo(mood) {
 const FLAME = `<svg class="flame" viewBox="0 0 72 90"><path d="M36 2C40 22 66 36 66 60a30 30 0 0 1-60 0c0-12 6-20 12-26 0 10 4 14 8 14C22 30 30 16 36 2z" fill="currentColor"/><path d="M36 44c4 10 14 14 14 26a14 14 0 0 1-28 0c0-8 6-12 8-18 2 4 4 5 6 5z" fill="#ffd44d"/></svg>`;
 
 // ---- live feed: parse history.atom into {date: [incidents]} -------------------------
+const ud = down => `<b class="ud ${down ? 'down' : 'up'}">${down ? 'down' : 'up'}</b>`; // green "up" / red "down"
 const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function parseFeed(xml) {
   const doc = new DOMParser().parseFromString(xml, 'application/xml');
@@ -165,30 +166,25 @@ function render(data, liveOk, sum) {
   };
   $('#streaks').innerHTML = card('up') + card('down');
 
-  // week row (Mon-Sun, UTC)
   const dow = (new Date(s.today).getUTCDay() + 6) % 7, monday = s.today - dow * DAY;
-  $('#week').innerHTML = ['M','T','W','T','F','S','S'].map((l, i) => {
-    const t = monday + i * DAY, future = t > s.today, tracked = t >= s.start;
-    const cls = future || !tracked ? '' : s.down(t) ? 'down' : 'up';
-    const mark = cls === 'up' ? '✓' : cls === 'down' ? '✕' : '';
-    return `<div class="wd">${l}<div class="dot ${cls} ${t === s.today ? 'today' : ''}">${mark}</div></div>`;
-  }).join('');
 
+  const tu = s.total('up'), td = s.total('down'), pct = n => Math.round(100 * n / ((tu + td) || 1)) + '%';
   $('#stats').innerHTML = [
-    [s.best('up'), 'longest up streak', 'up'],
-    [s.best('down'), 'longest down streak', 'down'],
-    [s.total('up'), 'up days', 'up'],
-    [s.total('down'), 'incident days', 'down'],
-  ].map(([v, l, k]) => `<div class="stat ${k}"><b>${v}</b><span>${l}</span></div>`).join('');
+    [s.best('up'), 'longest up streak', 'up', ''],
+    [s.best('down'), 'longest down streak', 'down', ''],
+    [tu, 'up days', 'up', pct(tu)],
+    [td, 'down days', 'down', pct(td)],
+  ].map(([v, l, k, p]) => `<div class="stat ${k}"><b>${v}</b><span>${l}</span>${p ? `<em>${p} of all days</em>` : ''}</div>`).join('');
 
-  const weeks = 26, first = monday - (weeks - 1) * 7 * DAY;
-  let cal = '';
-  for (let t = first; t < monday + 7 * DAY; t += DAY) {
-    const cls = t > s.today || t < s.start ? 'pad' : s.down(t) ? 'down' : 'up';
-    const n = cls === 'down' ? data.incidentDays[iso(t)].length : 0;
-    cal += `<i class="${cls}" title="${iso(t)}${n ? ` · ${n} incident(s)` : ''}"></i>`;
-  }
-  $('#cal').innerHTML = cal;
+  // fit the grid to the screen: ~20px per week column; keep the count fixed while a round is running
+  if (G.mode === 'idle' || !G.weeks) G.weeks = calcWeeks();
+  const weeks = G.weeks, first = monday - (weeks - 1) * 7 * DAY;
+  $('#tl-title').textContent = `Last ${weeks} weeks`;
+  LAST = [data, liveOk, sum];
+  G.cur = data;
+  G.allDays = []; for (let t = first; t < s.today; t += DAY) if (t >= s.start) G.allDays.push(iso(t));
+  G.redraw = () => renderGame(data, s, first, monday);
+  renderGame(data, s, first, monday);
 
   const recent = Object.keys(data.incidentDays).sort().reverse().slice(0, 8);
   $('#incidents').innerHTML = recent.map(d => {
@@ -200,6 +196,184 @@ function render(data, liveOk, sum) {
     ? `Live from githubstatus.com · history since ${data.startDate}`
     : `Live data unavailable, showing saved history from ${data.generatedAt.slice(0, 16).replace('T', ' ')} UTC`;
 }
+
+
+// ---- Last 26 weeks timeline + 10-day guess game --------------------------------------
+const ROUND = 10;
+let LAST = null;
+function calcWeeks() {
+  const w = $('#game').clientWidth || 600;
+  return Math.max(8, Math.min(26, Math.floor((w - 12 + 4) / 20)));
+}
+addEventListener('resize', () => {
+  clearTimeout(calcWeeks.t);
+  calcWeeks.t = setTimeout(() => { if (LAST && G.mode === 'idle' && calcWeeks() !== G.weeks) render(...LAST); }, 150);
+});
+const G = { weeks: 0, mode: 'idle', picks: [], i: 0, res: [], best: 0, cur: null, redraw: null };
+try { G.best = +localStorage.getItem('gs-best10') || 0; } catch {}
+const niceDate = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+const shortDate = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+const verdict = n => n >= 9 ? 'Duo wants to hire you.' : n >= 7 ? 'Solid. You read the status page a lot.' : n >= 5 ? 'Coin-flip energy.' : 'Did you even open githubstatus.com?';
+
+function renderGame(data, s, first, monday) {
+  const days = [];
+  for (let t = first; t < s.today; t += DAY) if (t >= s.start) days.push(iso(t));
+  const play = G.mode !== 'idle', done = G.mode === 'done';
+  const answered = Object.fromEntries(G.res.map(r => [r.date, r]));
+  const target = G.mode === 'play' ? G.picks[G.i] : null;
+
+  let grid = '';
+  for (let t = first; t < monday + 7 * DAY; t += DAY) {
+    const d = iso(t);
+    let cls;
+    if (!days.includes(d)) cls = 'pad';
+    else if (!play) cls = s.down(t) ? 'down' : 'up';      // plain timeline
+    else if (d in answered) cls = (s.down(t) ? 'down' : 'up') + ' pick';
+    else cls = 'unk' + (d === target ? ' target' : '');   // everything grayed out during the game
+    grid += `<i class="${cls}" title="${!play || d in answered ? d : ''}"></i>`;
+  }
+  const legend = `<div class="legend"><span><i style="background:var(--up)"></i>up</span><span><i style="background:var(--down)"></i>incident</span></div>`;
+  const L = G.res[G.res.length - 1];
+  const last = L && !done ? `<div class="gres ${L.ok ? 'ok' : 'no'}"><b>${L.ok ? 'Correct!' : 'Not quite.'}</b> ${esc(shortDate(L.date))} was ${ud(L.down)}${L.down ? `: ${esc(L.name)}` : ''}.</div>` : '';
+  let top = '', bottom = '';
+
+  if (!play) {
+    bottom = `${legend}<button class="gb up gstart" data-g="start">Play the guess game</button>
+      <div class="ghint">Guess ${ROUND} random days: up or down?${G.best ? ` Best score: <b>${G.best}/${ROUND}</b>` : ''}</div>`;
+  } else if (!done) {
+    top = `<div class="gtop"><div class="gduo">${duo(L && !L.ok ? 'sad' : 'happy')}</div>
+      <div class="gq"><small>Day ${G.i + 1} of ${ROUND} · score ${G.res.filter(r => r.ok).length}</small><br>Was GitHub ${ud(false)} or ${ud(true)} on<br><span class="gdate">${esc(niceDate(target))}</span>?</div></div>`;
+    bottom = `<div class="gbtns"><button data-g="up" class="gb up">Up</button><button data-g="down" class="gb down">Down</button></div>${last}
+      <button class="glink" data-g="quit">Quit game</button>`;
+  } else {
+    const score = G.res.filter(r => r.ok).length;
+    top = `<div class="gtop"><div class="gduo">${duo(score >= 5 ? 'happy' : 'sad')}</div>
+      <div class="gq"><small>Your score</small><br><span class="gscore">${score}/${ROUND}</span><br>${verdict(score)}</div></div>`;
+    bottom = `<ul class="inc gl">${G.res.map(r => `<li><span class="${r.ok ? 'gok' : 'gno'}">${r.ok ? '✓' : '✕'}</span> ${esc(shortDate(r.date))}: was ${ud(r.down)}${r.down ? ` <small>${esc(r.name)}</small>` : ''}</li>`).join('')}</ul>
+      <div class="gbtns"><button data-g="start" class="gb up">Play again</button><button data-g="quit" class="gb gray">Back to timeline</button></div>`;
+  }
+  $('#game').innerHTML = `${top}<div class="cal gcal ${play ? 'playing' : ''}">${grid}</div>${bottom}`;
+}
+
+$('#game').addEventListener('click', e => {
+  const b = e.target.closest('button[data-g]'); if (!b || !G.cur) return;
+  const act = b.dataset.g;
+  if (act === 'start') {
+    const days = G.allDays ?? [];
+    const pick = [...days].sort(() => Math.random() - .5).slice(0, ROUND);
+    Object.assign(G, { mode: 'play', picks: pick, i: 0, res: [] });
+  } else if (act === 'quit') {
+    Object.assign(G, { mode: 'idle', picks: [], i: 0, res: [] });
+  } else if (G.mode === 'play') {
+    const d = G.picks[G.i], inc = G.cur.incidentDays[d], down = !!inc, ok = (act === 'down') === down;
+    G.res.push({ date: d, ok, down, name: inc?.[0]?.name ?? '' });
+    G.i++;
+    if (G.i >= ROUND) {
+      G.mode = 'done';
+      const score = G.res.filter(r => r.ok).length;
+      if (score > G.best) { G.best = score; try { localStorage.setItem('gs-best10', score); } catch {} }
+    }
+  }
+  G.redraw();
+});
+
+// ---- Full-screen guess modal (mobile friendly): one day at a time ----------------------
+const REVEAL_MS = 4500;      // result screen length (any tap skips it)
+const TAP_GUARD_MS = 300;    // ignore taps right after answering so a double-tap doesn't skip the result
+const JOKES = {
+  // [actual][guess]
+  down_down: ["You're goddamn right.", "Say my name. 'GitHub is down.'", 'I am the one who clicks refresh.', 'Heisenberg of uptime. Nobody calls it like you.', 'Of course it was down. Was there ever a doubt?'],
+  up_up: ['A green day. Somewhere, a deploy was skipped.', 'Up! Frame this one, it is rare.', 'Nobody pushed on a Friday. Respect.', 'Correct. Someone at GitHub must have had a good coffee.'],
+  down_up: ['Up? On GitHub? That is adorable.', 'Optimism is not a monitoring strategy.', "Down was the safe guess. It's always the safe guess.", 'Bold of you to assume 100% uptime.', 'The unicorn would like a word.'],
+  up_down: ['Cynical. And, annoyingly, wrong: it was up.', 'It was up! Stop jinxing them.', 'Down? They actually had a good day. Let them have it.', 'Trust issues? Same. But this was a clean day.'],
+};
+const pickJoke = r => { const l = JOKES[`${r.down ? 'down' : 'up'}_${(r.ok ? r.down : !r.down) ? 'down' : 'up'}`]; return l[Math.floor(Math.random() * l.length)]; };
+const M = { revealAt: 0, timer: 0, open: false, days: [], picks: [], i: 0, res: [], reveal: null };
+const mo = document.createElement('div');
+mo.className = 'mo'; mo.hidden = true; mo.setAttribute('role', 'dialog'); mo.setAttribute('aria-modal', 'true'); mo.setAttribute('aria-label', 'Guess the day');
+document.body.appendChild(mo);
+
+function openModal() {
+  if (!G.cur) return;
+  clearTimeout(M.timer);
+  const t0 = Date.parse(G.cur.startDate), today = Date.parse(iso(Date.now()));
+  M.days = []; for (let t = t0; t < today; t += DAY) M.days.push(iso(t));
+  M.picks = [...M.days].sort(() => Math.random() - .5).slice(0, ROUND);
+  Object.assign(M, { open: true, i: 0, res: [], reveal: null });
+  mo.hidden = false; document.body.style.overflow = 'hidden';
+  renderModal();
+}
+function closeModal() { clearTimeout(M.timer); M.open = false; mo.hidden = true; document.body.style.overflow = ''; }
+
+function renderModal() {
+  const score = M.res.filter(r => r.ok).length;
+  const bar = `<div class="mbar">${Array.from({ length: ROUND }, (_, k) => {
+    const r = M.res[k]; return `<i class="${r ? (r.ok ? 'ok' : 'no') : k === M.i ? 'now' : ''}"></i>`; }).join('')}</div>`;
+  const head = `<div class="mhead"><button class="mx" data-m="close" aria-label="Close">✕</button>${bar}<span class="msc">${score}</span></div>`;
+  let body;
+  if (M.i >= ROUND) {
+    if (score > G.best) { G.best = score; try { localStorage.setItem('gs-best10', score); } catch {} }
+    body = `<div class="mbody">${duo(score >= 5 ? 'happy' : 'sad')}
+      <div class="mlabel">Your score</div><div class="mscore">${score}/${ROUND}</div>
+      <p class="mverdict">${verdict(score)}${G.best ? ` <small>Best: ${G.best}/${ROUND}</small>` : ''}</p>
+      <ul class="inc gl">${M.res.map(r => `<li><span class="${r.ok ? 'gok' : 'gno'}">${r.ok ? '✓' : '✕'}</span> ${esc(shortDate(r.date))}: was ${ud(r.down)}${r.down ? ` <small>${esc(r.name)}</small>` : ''}</li>`).join('')}</ul></div>
+      <div class="mfoot"><button class="gb up" data-m="again">Play again</button><button class="gb gray" data-m="close">Close</button></div>`;
+  } else if (M.reveal) {
+    const r = M.reveal;
+    const cols = ['#ffc800', '#ffdf5d', '#ff9600', '#fff1a8', '#ffb020'];
+    const confetti = r.ok ? Array.from({ length: 16 }, (_, k) => {
+      const a = (k / 16) * 6.283 + Math.random() * .4, d = 90 + Math.random() * 70;
+      return `<b class="cf" style="--dx:${Math.round(Math.cos(a) * d)}px;--dy:${Math.round(Math.sin(a) * d - 30)}px;--c:${cols[k % 5]};--r:${Math.round(Math.random() * 360)}deg"></b>`;
+    }).join('') : '';
+    body = `<div class="mbody rv ${r.ok ? 'ok' : 'no'}">${confetti}${duo(r.ok ? 'happy' : 'sad')}
+      <div class="mres ${r.ok ? 'ok' : 'no'}">${r.ok ? '✓ Correct!' : '✕ Not quite.'}</div>
+      <div class="mjoke">${esc(r.joke)}</div>
+      <div class="mdate">${esc(niceDate(r.date))}</div>
+      <p class="mverdict">GitHub was ${ud(r.down)}${r.down ? `<br><small>${esc(r.name)}</small>` : ''}</p></div>`;
+  } else {
+    const d = M.picks[M.i], dt = new Date(d + 'T00:00:00Z');
+    body = `<div class="mbody">${duo('happy')}
+      <div class="mlabel">Day ${M.i + 1} of ${ROUND}</div>
+      <div class="mq">Was GitHub ${ud(false)} or ${ud(true)} on</div>
+      <div class="mwd">${dt.toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' })}</div>
+      <div class="mdate big">${dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })}</div></div>
+      <div class="mfoot two"><button class="gb up big" data-m="up">Up</button><button class="gb down big" data-m="down">Down</button></div>`;
+  }
+  mo.className = 'mo' + (M.reveal && M.i < ROUND ? (M.reveal.ok ? ' mo-ok' : ' mo-no') : '');
+  mo.innerHTML = `<div class="mwrap">${head}${body}</div>`;
+}
+
+mo.addEventListener('click', e => {
+  const a = e.target.closest('button[data-m]')?.dataset.m;
+  if (a === 'close' || a === 'again') return modalAct(a);
+  // tap anywhere on the result screen moves on immediately
+  if (M.reveal) { if (performance.now() - M.revealAt > TAP_GUARD_MS) modalAct('next'); return; }
+  if (a) modalAct(a);
+});
+function modalAct(a) {
+  if (a === 'close') return closeModal();
+  if (a === 'again') return openModal();
+  if (a === 'next') { clearTimeout(M.timer); M.reveal = null; M.i++; }
+  else if ((a === 'up' || a === 'down') && !M.reveal && M.i < ROUND) {
+    const d = M.picks[M.i], inc = G.cur.incidentDays[d], down = !!inc;
+    M.reveal = { date: d, ok: (a === 'down') === down, down, name: inc?.[0]?.name ?? '' };
+    M.reveal.joke = pickJoke(M.reveal);
+    try { navigator.vibrate?.(M.reveal.ok ? 40 : [90, 50, 90, 50, 180]); } catch {}
+    M.res.push(M.reveal);
+    clearTimeout(M.timer);
+    M.timer = setTimeout(() => M.open && modalAct('next'), REVEAL_MS);
+    M.revealAt = performance.now(); // auto-advance, no button
+  }
+  renderModal();
+}
+addEventListener('keydown', e => {
+  if (!M.open) return;
+  const k = e.key.toLowerCase();
+  if (k === 'escape') closeModal();
+  else if (k === 'u' || k === 'arrowup') modalAct('up');
+  else if (k === 'd' || k === 'arrowdown') modalAct('down');
+});
+$('#playTop').addEventListener('click', openModal);
 
 const getJSON = u => fetch(u, { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
 let history;

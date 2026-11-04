@@ -77,3 +77,98 @@ summary.banner::-webkit-details-marker{display:none}
 details[open]>summary .chev{transform:rotate(-135deg);margin-bottom:-4px}
 details.status{margin:16px 0}
 details.status>summary{margin:0 0 12px}
+
+.gtop{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.gduo .duo{width:70px;height:70px;animation:none}
+.gq{font-size:18px}.gdate{font-size:22px;font-weight:900;color:var(--accent-d)}
+.gcal i.unk{background:var(--empty)}
+.gcal i.target{background:var(--flame);outline:3px solid var(--flame);outline-offset:2px;animation:blink 1s ease-in-out infinite}
+@keyframes blink{50%{transform:scale(1.25)}}
+.gbtns{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.gbtns:has(button[data-g=reset]){grid-template-columns:1fr}
+.gb{font:inherit;font-weight:900;font-size:17px;text-transform:uppercase;letter-spacing:.8px;color:#fff;border:0;border-bottom:5px solid;border-radius:14px;padding:14px;cursor:pointer}
+.gb.up{background:var(--up);border-color:var(--up-d)}.gb.down{background:var(--down);border-color:var(--down-d)}
+.gb:active{transform:translateY(3px);border-bottom-width:2px}
+.gres{margin-top:14px;padding:12px 14px;border-radius:14px;font-weight:600;font-size:15px}
+.gres.ok{background:color-mix(in srgb,var(--up) 18%,transparent)}.gres.no{background:color-mix(in srgb,var(--down) 18%,transparent)}
+.gstats{display:flex;justify-content:space-between;gap:8px;margin-top:14px;font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.gstats b{color:var(--fg);font-size:16px}
+
+.gcal.playing i.unk{background:var(--empty)}
+.gcal i.pick{outline:2px solid var(--fg);outline-offset:1px}
+.gstart{width:100%;margin-top:16px}
+.ghint{margin-top:10px;text-align:center;font-size:13px;color:var(--muted)}
+.gb.gray{background:var(--muted);border-color:#5c6970}
+.glink{display:block;margin:12px auto 0;background:none;border:0;color:var(--muted);font:inherit;font-size:13px;cursor:pointer;text-decoration:underline}
+.gscore{font-size:44px;font-weight:900;color:var(--accent-d);line-height:1.1}
+.gq small{color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-size:12px}
+.gl{margin:16px 0}.gl li{font-size:14px}.gok{color:var(--up-d);font-weight:900}.gno{color:var(--down-d);font-weight:900}
+.gduo .duo{width:80px;height:80px}
+
+.cal{padding:6px}
+.stat em{display:block;font-style:normal;font-size:12px;color:var(--muted);margin-top:2px}
+
+.playtop{display:block;width:100%;max-width:420px;margin:0 auto 20px}
+.mo{position:fixed;inset:0;z-index:100;background:var(--bg);overflow-y:auto}
+.mo[hidden]{display:none}
+.mwrap{min-height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column;padding:12px 16px calc(16px + env(safe-area-inset-bottom))}
+.mhead{display:flex;align-items:center;gap:12px;padding:6px 0}
+.mx{background:none;border:0;color:var(--muted);font-size:22px;cursor:pointer;padding:8px}
+.mbar{flex:1;display:flex;gap:4px}
+.mbar i{flex:1;height:10px;border-radius:5px;background:var(--empty)}
+.mbar i.ok{background:var(--up)}.mbar i.no{background:var(--down)}.mbar i.now{background:var(--flame)}
+.msc{font-weight:900;color:var(--up-d);min-width:24px;text-align:right}
+.mbody{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;padding:12px 0}
+.mo .duo{width:130px;height:130px}
+.mlabel{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+.mq{font-size:20px}.mwd{font-size:24px;font-weight:900;color:var(--muted)}
+.mdate{font-size:22px;font-weight:900}.mdate.big{font-size:38px;line-height:1.1;color:var(--accent-d)}
+.mres{font-size:34px;font-weight:900}.mres.ok{color:var(--up-d)}.mres.no{color:var(--down-d)}
+.mscore{font-size:64px;font-weight:900;color:var(--accent-d);line-height:1}
+.mverdict{font-size:18px;margin:4px 0}.mverdict small{color:var(--muted)}
+.mfoot{display:grid;gap:12px;grid-template-columns:1fr;position:sticky;bottom:0;padding-top:8px;background:var(--bg)}
+.mfoot.two{grid-template-columns:1fr 1fr}
+.gb.big{padding:22px 10px;font-size:22px}
+.mo .gl{width:100%;text-align:left}
+
+.mtimer{height:8px;border-radius:4px;background:var(--empty);overflow:hidden}
+.mtimer i{display:block;height:100%;width:100%;background:var(--accent);transform-origin:left;animation:drain 3s linear forwards}
+@keyframes drain{to{transform:scaleX(0)}}
+
+/* result animations */
+.mbody.rv{position:relative}
+.mres{animation:pop .35s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.mbody.ok .duo{animation:jump .5s ease-out}
+@keyframes jump{0%{transform:translateY(0) scale(1)}35%{transform:translateY(-28px) scale(1.08,.94) rotate(-6deg)}70%{transform:translateY(0) scale(.96,1.05) rotate(4deg)}100%{transform:none}}
+.mbody.no .duo{animation:shake .5s ease-in-out}
+@keyframes shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-14px) rotate(-5deg)}30%{transform:translateX(12px) rotate(4deg)}45%{transform:translateX(-10px)}60%{transform:translateX(8px)}75%{transform:translateX(-4px)}}
+.cf{position:absolute;left:50%;top:38%;width:9px;height:14px;border-radius:2px;background:var(--c);opacity:0;animation:burst 1s ease-out forwards;pointer-events:none}
+@keyframes burst{0%{opacity:1;transform:translate(-50%,-50%) rotate(0)}100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy) + 40px)) rotate(var(--r))}}
+.mo-ok::after,.mo-no::after{content:"";position:fixed;inset:0;pointer-events:none}
+.mo-ok::after{box-shadow:inset 0 0 0 6px var(--up),inset 0 0 90px color-mix(in srgb,var(--up) 45%,transparent);animation:flash 1.5s ease-out forwards}
+.mo-no::after{box-shadow:inset 0 0 0 6px var(--down),inset 0 0 90px color-mix(in srgb,var(--down) 55%,transparent);animation:flash 1.5s ease-out forwards}
+@keyframes flash{0%{opacity:0}12%{opacity:1}100%{opacity:.0}}
+.mo-no .mwrap{animation:nudge .45s}
+@keyframes nudge{20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
+@media(prefers-reduced-motion:reduce){.mbody.ok .duo,.mbody.no .duo,.cf,.mo-no .mwrap,.mres{animation:none}.cf{display:none}}
+.mjoke{font-size:20px;font-weight:900;font-style:italic;max-width:360px;margin:6px 0 4px;animation:pop .4s .1s cubic-bezier(.2,1.6,.4,1) both}
+.rv.ok .mjoke{color:var(--up-d)}.rv.no .mjoke{color:var(--down-d)}
+@media(prefers-reduced-motion:reduce){.mjoke{animation:none}}
+.mo{-webkit-tap-highlight-color:transparent}.mbody.rv{cursor:pointer}
+
+/* green/red are reserved for the words "up"/"down"; right/wrong use yellow + vibration */
+:root{--gold:#ffc800;--gold-d:#c48a00}
+.ud.up{color:var(--up-d)}.ud.down{color:var(--down-d)}
+.mres.ok{color:var(--gold-d)}.mres.no{color:var(--fg)}
+.rv.ok .mjoke{color:var(--gold-d)}.rv.no .mjoke{color:var(--fg)}
+.msc,.mscore{color:var(--gold-d)}
+.mdate.big,.gdate{color:var(--fg)}
+.mbar i.ok{background:var(--gold)}.mbar i.no{background:var(--muted)}
+.gok{color:var(--gold-d)}.gno{color:var(--muted)}
+.gres.ok{background:color-mix(in srgb,var(--gold) 22%,transparent)}.gres.no{background:color-mix(in srgb,var(--muted) 16%,transparent)}
+.mo-ok::after{box-shadow:inset 0 0 0 6px var(--gold),inset 0 0 100px color-mix(in srgb,var(--gold) 55%,transparent)}
+.mo-no::after{display:none}
+.mo-no .mwrap{animation:vibrate .6s}
+@keyframes vibrate{0%,100%{transform:translate(0)}10%{transform:translate(-10px,2px)}20%{transform:translate(10px,-2px)}30%{transform:translate(-9px,2px)}40%{transform:translate(9px,-2px)}50%{transform:translate(-7px,1px)}60%{transform:translate(7px,-1px)}70%{transform:translate(-4px)}80%{transform:translate(4px)}90%{transform:translate(-2px)}}
+.cf{--c:var(--gold)}
