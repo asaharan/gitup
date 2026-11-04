@@ -327,7 +327,7 @@ addEventListener('scroll', hideTip, { passive: true });
 document.addEventListener('click', e => { if (!e.target.closest?.('.gcal')) hideTip(); });
 
 // ---- Full-screen guess modal (mobile friendly): one day at a time ----------------------
-const REVEAL_MS = 4500;      // result screen length (any tap skips it)
+const REVEAL_MS = 3000;      // result screen length (any tap skips it)
 const TAP_GUARD_MS = 300;    // ignore taps right after answering so a double-tap doesn't skip the result
 // Generic lines, keyed `${actual}_${yourGuess}`
 const JOKES = {
@@ -478,7 +478,8 @@ function renderModal() {
       <div class="mres ${r.ok ? 'ok' : 'no'}">${r.ok ? '✓ Correct!' : '✕ Not quite.'}</div>
       <div class="mjoke">${esc(r.joke)}</div>
       ${calIcon(r.date, 'sm')}
-      <p class="mverdict">GitHub was ${ud(r.down)}${r.down ? `<br><small>${esc(r.name)}</small>` : ''}</p></div>`;
+      <p class="mverdict">GitHub was ${ud(r.down)}${r.down ? `<br><small>${esc(r.name)}</small>` : ''}</p></div>
+      <div class="mfoot"><button class="gb blue big" data-m="next">${M.i + 1 >= ROUND ? 'See score' : 'Next'}</button></div>`;
   } else {
     const d = M.picks[M.i], dt = new Date(d + 'T00:00:00Z');
     body = `<div class="mbody">${duo('happy')}

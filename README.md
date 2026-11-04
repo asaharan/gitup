@@ -119,6 +119,10 @@ jobs:
 
 It is a folder of static files, so any static host works: GitHub Pages, Cloudflare Pages, Netlify, Vercel, S3. Point the host at the repository root, with no build command.
 
+### Analytics
+
+The page includes **[Vercel Web Analytics](https://vercel.com/docs/analytics)** (cookie-free, no personal data). It only reports when the site is deployed on Vercel: open the project's **Analytics** tab and click **Enable**. Locally, the script 404s harmlessly.
+
 ## SEO and sharing
 
 - **Meta:** title, description, canonical URL, `robots`, theme colour, favicon and touch icon, all in the `<head>` of `index.html`.
