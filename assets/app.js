@@ -87,7 +87,19 @@ function streaks(data) {
   }
   const best = k => runs[k].reduce((m, r) => Math.max(m, r.n), 0);
   const total = k => runs[k].reduce((s, r) => s + r.n, 0);
-  return { start, today, down, mode: cur.k, n: cur.n, best, total, runs };
+  // Stats always use the last 365 days (or all data if we have less)
+  const wStart = Math.max(start, today - 364 * DAY);
+  const wr = { up: [], down: [] }, wdUp = Array(7).fill(0), wdDown = Array(7).fill(0);
+  let wc = null, wDays = 0;
+  for (let t = wStart; t <= today; t += DAY) {
+    const k = down(t) ? 'down' : 'up', wd = new Date(t).getUTCDay();
+    (k === 'down' ? wdDown : wdUp)[wd]++; wDays++;
+    if (wc && wc.k === k) wc.n++; else { wc = { k, n: 1 }; wr[k].push(wc); }
+  }
+  const w = { days: wDays, from: wStart, wdUp, wdDown,
+    best: k => wr[k].reduce((m, r) => Math.max(m, r.n), 0),
+    total: k => wr[k].reduce((a, r) => a + r.n, 0) };
+  return { start, today, down, mode: cur.k, n: cur.n, best, total, runs, w };
 }
 
 function message(s) {
@@ -165,19 +177,25 @@ function render(data, liveOk, sum) {
       <div class="lbl">Current ${k} streak</div>
       <div class="num">${FLAME}<span>${n}</span></div>
       <div class="unit">${n === 1 ? 'day' : 'days'}</div>
-      <div class="sub">${active ? `Best: ${s.best(k)} days` : prev ? `Last run: ${prev.n} days, ended ${iso(prev.from + prev.n * DAY - DAY)}` : 'None yet'}</div></div>`;
+      <div class="sub">${active ? `Best (365d): ${s.w.best(k)} days` : prev ? `Last run: ${prev.n} days, ended ${iso(prev.from + prev.n * DAY - DAY)}` : 'None yet'}</div></div>`;
   };
   $('#streaks').innerHTML = card('up') + card('down');
 
   const dow = (new Date(s.today).getUTCDay() + 6) % 7, monday = s.today - dow * DAY;
 
-  const tu = s.total('up'), td = s.total('down'), pct = n => Math.round(100 * n / ((tu + td) || 1)) + '%';
+  const W = s.w, tu = W.total('up'), td = W.total('down'), pct = n => Math.round(100 * n / (W.days || 1)) + '%';
+  const WD = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const top = arr => arr.indexOf(Math.max(...arr));
+  const wdD = top(W.wdDown), wdU = top(W.wdUp);
+  $('#statsnote').textContent = `Stats: last ${W.days} days`;
   $('#stats').innerHTML = [
-    [s.best('up'), 'longest up streak', 'up', ''],
-    [s.best('down'), 'longest down streak', 'down', ''],
-    [tu, 'up days', 'up', pct(tu)],
-    [td, 'down days', 'down', pct(td)],
-  ].map(([v, l, k, p]) => `<div class="stat ${k}"><b>${v}</b><span>${l}</span>${p ? `<em>${p} of all days</em>` : ''}</div>`).join('');
+    [W.best('up'), 'longest up streak', 'up', 'days'],
+    [W.best('down'), 'longest down streak', 'down', 'days'],
+    [tu, 'up days', 'up', pct(tu) + ' of days'],
+    [td, 'down days', 'down', pct(td) + ' of days'],
+    [WD[wdU], 'most up days', 'up wd', `${W.wdUp[wdU]} of ${W.wdUp[wdU] + W.wdDown[wdU]} ${WD[wdU]}s`],
+    [WD[wdD], 'most down days', 'down wd', `${W.wdDown[wdD]} of ${W.wdUp[wdD] + W.wdDown[wdD]} ${WD[wdD]}s`],
+  ].map(([v, l, k, p]) => `<div class="stat ${k}"><b>${v}</b><span>${l}</span><em>${p}</em></div>`).join('');
 
   // fit the grid to the screen: ~20px per week column; keep the count fixed while a round is running
   if (G.mode === 'idle' || !G.weeks) G.weeks = calcWeeks();
@@ -229,11 +247,12 @@ function renderGame(data, s, first, monday) {
   for (let t = first; t < monday + 7 * DAY; t += DAY) {
     const d = iso(t);
     let cls;
-    if (!days.includes(d)) cls = 'pad';
-    else if (!play) cls = s.down(t) ? 'down' : 'up';      // plain timeline
+    if (!play && t >= s.start && t <= s.today) cls = s.down(t) ? 'down' : 'up';   // plain timeline (incl. today)
+    else if (!days.includes(d)) cls = 'pad';
     else if (d in answered) cls = (s.down(t) ? 'down' : 'up') + ' pick';
     else cls = 'unk' + (d === target ? ' target' : '');   // everything grayed out during the game
-    grid += `<i class="${cls}" title="${!play || d in answered ? d : ''}"></i>`;
+    const known = cls !== 'pad' && (!play || d in answered);   // never leak unanswered days during the game
+    grid += `<i class="${cls}" ${known ? `data-d="${d}"` : ''}></i>`;
   }
   const legend = `<div class="legend"><span><i style="background:var(--up)"></i>up</span><span><i style="background:var(--down)"></i>incident</span></div>`;
   const L = G.res[G.res.length - 1];
@@ -279,6 +298,28 @@ $('#game').addEventListener('click', e => {
   }
   G.redraw();
 });
+
+// ---- hover / tap tooltip on the timeline ---------------------------------------------------
+const tip = document.createElement('div');
+tip.className = 'tip'; tip.hidden = true; document.body.appendChild(tip);
+function showTip(cell) {
+  const d = cell.dataset.d, list = G.cur?.incidentDays[d] ?? [];
+  const names = list.slice(0, 3).map(i => `<li>${esc(i.name)}</li>`).join('') + (list.length > 3 ? `<li>+${list.length - 3} more</li>` : '');
+  tip.innerHTML = `<div class="tdate">${esc(niceDate(d))}</div>
+    <div>${ud(list.length > 0)}${list.length ? `: ${list.length} incident${list.length > 1 ? 's' : ''}` : ': no incidents'}</div>${names ? `<ul>${names}</ul>` : ''}`;
+  tip.hidden = false;
+  const r = cell.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+  let x = r.left + r.width / 2 - tw / 2; x = Math.max(8, Math.min(x, innerWidth - tw - 8));
+  let y = r.top - th - 10; if (y < 8) y = r.bottom + 10;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+}
+const hideTip = () => { tip.hidden = true; };
+const cellOf = e => e.target.closest?.('.gcal i[data-d]');
+$('#game').addEventListener('mouseover', e => { const c = cellOf(e); c ? showTip(c) : hideTip(); });
+$('#game').addEventListener('mouseleave', hideTip);
+$('#game').addEventListener('click', e => { const c = cellOf(e); if (c) showTip(c); });   // tap on touch screens
+addEventListener('scroll', hideTip, { passive: true });
+document.addEventListener('click', e => { if (!e.target.closest?.('.gcal')) hideTip(); });
 
 // ---- Full-screen guess modal (mobile friendly): one day at a time ----------------------
 const REVEAL_MS = 4500;      // result screen length (any tap skips it)
@@ -399,7 +440,7 @@ document.body.appendChild(mo);
 function openModal() {
   if (!G.cur) return;
   clearTimeout(M.timer);
-  const t0 = Date.parse(G.cur.startDate), today = Date.parse(iso(Date.now()));
+  const today = Date.parse(iso(Date.now())), t0 = Math.max(Date.parse(G.cur.startDate), today - 365 * DAY); // quiz uses the last 365 days only
   M.days = []; for (let t = t0; t < today; t += DAY) M.days.push(iso(t));
   M.picks = [...M.days].sort(() => Math.random() - .5).slice(0, ROUND);
   Object.assign(M, { open: true, i: 0, res: [], reveal: null });

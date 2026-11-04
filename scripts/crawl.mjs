@@ -21,7 +21,7 @@ const decode = s => s
 async function fetchPage(n) {
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      const res = await fetch(`${BASE}?page=${n}`, { headers: { 'user-agent': 'githubstreak-crawler' } });
+      const res = await fetch(`${BASE}?page=${n}`, { headers: { 'user-agent': 'gitup-crawler' } });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const html = await res.text();
       const m = html.match(/data-react-class="HistoryIndex"\s+data-react-props="([^"]*)"/);
