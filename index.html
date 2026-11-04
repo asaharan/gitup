@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GitHub Streak – Up streak</title>
+<meta name="description" content="How many days in a row has GitHub been up?">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body class="up" data-mode="up">
+<header><a class="logo" href="./">githubstreak</a>
+<nav><a class="up on" href="./">Up streak</a><a class="dn " href="down.html">Down streak</a></nav></header>
+<main>
+<div class="hero" id="hero"></div>
+<div class="streak" id="streak"></div>
+<div class="card"><h2>This week</h2><div class="week" id="week"></div></div>
+<div class="stats" id="stats"></div>
+<div class="card"><h2>Last 26 weeks</h2><div class="cal" id="cal"></div>
+<div class="legend"><span><i style="background:var(--up)"></i>up</span><span><i style="background:var(--down)"></i>incident</span></div></div>
+<div class="card"><h2>Recent incidents</h2><ul class="inc" id="incidents"></ul></div>
+</main>
+<footer><div id="updated"></div><div>Source: <a href="https://www.githubstatus.com/history">githubstatus.com/history</a> · days are UTC · not affiliated with GitHub</div></footer>
+<script src="assets/app.js"></script>
+</body></html>
