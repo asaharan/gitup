@@ -1,4 +1,6 @@
 // Shared logic: loads data/history.json, computes streaks (UTC days), renders Duo + page.
+const SITE = "https://gitup.lol";
+const xShare = text => `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(SITE)}&via=iamamitsaharan`;
 const FEED = "https://www.githubstatus.com/history.atom";
 const SUMMARY = "https://www.githubstatus.com/api/v2/summary.json";
 const DAY = 864e5;
@@ -167,6 +169,9 @@ function render(data, liveOk, sum) {
   const s = streaks(data), up = s.mode === 'up';
   renderStatus(sum);
   const [msg, mood] = message(s);
+  $('#shareTop').href = xShare(up
+    ? `GitHub has been up ${s.n} day${s.n === 1 ? '' : 's'} in a row 🟢🔥`
+    : `GitHub has had incidents ${s.n} day${s.n === 1 ? '' : 's'} in a row 🔴 Duo is not happy.`);
   $('#hero').innerHTML = duo(mood) + `<div class="bubble">${msg}</div>`;
 
   // both streaks side by side; the inactive one shows how its last run went
@@ -461,7 +466,7 @@ function renderModal() {
       <div class="mlabel">Your score</div><div class="mscore">${score}/${ROUND}</div>
       <p class="mverdict">${verdict(score)}${G.best ? ` <small>Best: ${G.best}/${ROUND}</small>` : ''}</p>
       <ul class="inc gl">${M.res.map(r => `<li><span class="${r.ok ? 'gok' : 'gno'}">${r.ok ? '✓' : '✕'}</span> ${esc(shortDate(r.date))}: was ${ud(r.down)}${r.down ? ` <small>${esc(r.name)}</small>` : ''}</li>`).join('')}</ul></div>
-      <div class="mfoot"><button class="gb up" data-m="again">Play again</button><button class="gb gray" data-m="close">Close</button></div>`;
+      <div class="mfoot"><button class="gb up" data-m="again">Play again</button><a class="gb sharex" target="_blank" rel="noopener" href="${xShare(`I scored ${score}/${ROUND} guessing whether GitHub was up or down 🦉 ${verdict(score)} Can you beat me?`)}">Share my score on X</a><button class="gb gray" data-m="close">Close</button></div>`;
   } else if (M.reveal) {
     const r = M.reveal;
     const cols = ['#ffc800', '#ffdf5d', '#ff9600', '#fff1a8', '#ffb020'];

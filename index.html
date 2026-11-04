@@ -1,17 +1,47 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>gitup: a nicer githubstatus.com</title>
-<meta name="description" content="better githubstatus.com. How many days in a row has GitHub been up?">
+<title>gitup: is GitHub up? Live status, uptime streaks & a game</title>
+<meta name="description" content="Is GitHub up? Live GitHub status, up and down streaks, 365-day stats and a guessing game. Built because I check githubstatus.com far too often.">
+<link rel="canonical" href="https://gitup.lol/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#58cc02">
+<meta name="author" content="Amit Saharan">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="gitup">
+<meta property="og:locale" content="en_US">
+<meta property="og:url" content="https://gitup.lol/">
+<meta property="og:title" content="gitup: is GitHub up? Count the days.">
+<meta property="og:description" content="Is GitHub up? Count the days. Live status, up & down streaks and a guessing game, with an owl.">
+<meta property="og:image" content="https://gitup.lol/assets/og.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="gitup: a green owl next to the text 'Is GitHub up? Count the days.'">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@iamamitsaharan">
+<meta name="twitter:creator" content="@iamamitsaharan">
+<meta name="twitter:title" content="gitup: is GitHub up? Count the days.">
+<meta name="twitter:description" content="Is GitHub up? Count the days. Live status, up & down streaks and a guessing game, with an owl.">
+<meta name="twitter:image" content="https://gitup.lol/assets/og.png">
+<meta name="twitter:image:alt" content="gitup: a green owl next to the text 'Is GitHub up? Count the days.'">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://gitup.lol/#website","url":"https://gitup.lol/","name":"gitup","description":"Is GitHub up? Live GitHub status, up and down streaks, 365-day stats and a guessing game. Built because I check githubstatus.com far too often.","inLanguage":"en"},{"@type":"WebApplication","@id":"https://gitup.lol/#app","name":"gitup","url":"https://gitup.lol/","description":"Is GitHub up? Live GitHub status, up and down streaks, 365-day stats and a guessing game. Built because I check githubstatus.com far too often.","applicationCategory":"DeveloperApplication","operatingSystem":"Any","browserRequirements":"Requires JavaScript","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"image":"https://gitup.lol/assets/og.png","author":{"@type":"Person","name":"Amit Saharan","url":"https://saharan.dev","sameAs":["https://x.com/iamamitsaharan","https://saharan.dev"]}}]}</script>
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
 <header><a class="logo" href="./">gitup</a>
 <div class="by"><a href="https://x.com/iamamitsaharan" target="_blank" rel="noopener" aria-label="@iamamitsaharan on X"><img src="assets/amit.jpg" alt="@iamamitsaharan" width="36" height="36"></a>
 <a class="home" href="https://saharan.dev" target="_blank" rel="noopener">saharan.dev</a></div></header>
+<h1 class="pitch"><span class="q">Is GitHub down right now?</span> I have to open githubstatus.com so often that I built a nicer version of it.</h1>
 <main>
+<noscript><div class="card"><h2>JavaScript needed</h2><p>gitup shows live GitHub status and up/down streaks computed in your browser. Enable JavaScript, or check <a href="https://www.githubstatus.com">githubstatus.com</a> directly.</p></div></noscript>
 <div class="hero" id="hero"></div>
-<button class="gb up playtop" id="playTop">Play the guess game</button>
+<div class="topbtns"><button class="gb up playtop" id="playTop">Play the guess game</button><a class="gb sharex" id="shareTop" target="_blank" rel="noopener" href="https://x.com/intent/post?url=https%3A%2F%2Fgitup.lol">Share on X</a></div>
 <div class="streaks" id="streaks"></div>
 <div id="status"></div>
 <div class="statsnote" id="statsnote"></div>

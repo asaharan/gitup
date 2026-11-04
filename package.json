@@ -1,6 +1,7 @@
 {
   "name": "gitup",
   "private": true,
+  "homepage": "https://gitup.lol",
   "type": "module",
   "scripts": {
     "crawl": "node scripts/crawl.mjs",
